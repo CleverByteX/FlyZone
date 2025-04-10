@@ -1,4 +1,4 @@
-# Mobile 3D Plane Game
+# FlyZone 3D Plane Game
 
 Welcome to the Mobile 3D Plane Game! This is a simple, fun, and mobile-responsive 3D game where you control a plane flying over a beautiful landscape. Your goal is to avoid obstacles in the air while enjoying the scenic views.
 
