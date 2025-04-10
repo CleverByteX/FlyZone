@@ -123,38 +123,13 @@ var Game = {
         this.bullets = [];
         this.addExtraPlanes();
         
-        // Standard keyboard listeners for movement (existing)
+        // Keyboard listeners for movement and shooting
         window.addEventListener('keydown', function(e) {
-            // Avoid interfering with dedicated space handling.
-            if (e.key !== ' ') {
-                Game.keys[e.key] = true;
-            }
+            Game.keys[e.key] = true;
         });
         window.addEventListener('keyup', function(e) {
-            if (e.key !== ' ') {
-                Game.keys[e.key] = false;
-            }
+            Game.keys[e.key] = false;
         });
-
-        // Dedicated shooting handler for space.
-        // This ensures that when the space key is held down, shootBullet() is called repeatedly.
-        var shootingInterval = null;
-        window.addEventListener('keydown', function(e) {
-            if (e.key === ' ' && shootingInterval === null) {
-                shootingInterval = setInterval(function() {
-                    if (!Game.gameOver && Game.plane) {
-                        Game.shootBullet();
-                    }
-                }, 100);  // Adjust the interval (milliseconds) for desired fire rate
-            }
-        });
-        window.addEventListener('keyup', function(e) {
-            if (e.key === ' ' && shootingInterval !== null) {
-                clearInterval(shootingInterval);
-                shootingInterval = null;
-            }
-        });
-
         // Mouse listeners for camera control
         window.addEventListener('mousedown', function(e) {
             if (e.button === 0) {
