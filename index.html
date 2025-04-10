@@ -19,6 +19,12 @@
     </style>
 </head>
 <body>
+    <script>
+        if (/Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.body.innerHTML = "<div style='display: flex; align-items: center; justify-content: center; height: 100vh;'><h1>This game is available on desktop only.</h1></div>";
+            throw new Error("Mobile device not supported");
+        }
+    </script>
     <div id="game-container"></div>
 
     <!-- Mute Button (positioned at top-right) -->
