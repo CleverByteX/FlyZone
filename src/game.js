@@ -42,15 +42,13 @@ var Game = {
             container.appendChild(this.renderer.domElement);
         }
         
-        // Background Music
-        this.backgroundMusic = new Audio("assets/sounds/background.mp3"); // file exists
+        // Background Music: wait for a click to start, remove immediate play.
+        this.backgroundMusic = new Audio("assets/sounds/background.mp3");
         this.backgroundMusic.loop = true;
         this.backgroundMusic.volume = 0.3;
-        // Use a click or touch listener if autoplay is restricted:
         document.body.addEventListener('click', () => {
             this.backgroundMusic.play();
         }, { once: true });
-        this.backgroundMusic.play();
         
         // Lighting
         var ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -307,18 +305,16 @@ var Game = {
                 this.bullets.splice(i, 1);
                 continue;
             }
-            // Check collision against all targets (obstacles, landmarks, mountains, clouds)
+            // Increase collision detection threshold slightly for reliability.
             let targets = this.obstacles.concat(this.landmarks).concat(this.mountains).concat(this.clouds);
             for (let j = targets.length - 1; j >= 0; j--) {
                 let target = targets[j];
-                if (bullet.position.distanceTo(target.position) < 1) {
-                    // If the target is indestructible (mountains), simply remove the bullet.
+                if (bullet.position.distanceTo(target.position) < 2.0) {
                     if (target.userData.destructible === false) {
                         this.scene.remove(bullet);
                         this.bullets.splice(i, 1);
                         break;
                     } else {
-                        // For all other objects, reposition them to simulate destruction.
                         this.repositionTarget(target);
                         this.scene.remove(bullet);
                         this.bullets.splice(i, 1);
@@ -329,13 +325,20 @@ var Game = {
         }
     },
     repositionObjects: function() {
-        let threshold = 150; // Reduced threshold to reposition objects earlier
+        // If an object is behind the plane (z > plane.z + margin) or too far from the plane, reposition it ahead.
+        let margin = 20;
+        let threshold = 150;
         let reposition = function(obj) {
-            if (obj.position.distanceTo(Game.plane.position) > threshold) {
-                obj.position.x = Game.plane.position.x + (Math.random() * 400 - 200);
-                obj.position.z = Game.plane.position.z + (Math.random() * 400 - 200);
-                let groundY = Math.sin(obj.position.x / 10) * Math.cos(obj.position.z / 10);
-                obj.position.y = (obj.position.y > 5) ? Math.random() * 10 + 5 : groundY + 1;
+            if (!Game.plane) return;
+            let dist = obj.position.distanceTo(Game.plane.position);
+            // Since the plane moves in -z, use object's z relative to plane's z.
+            if (obj.position.z > Game.plane.position.z + margin || dist > threshold) {
+                // Place the object ahead: new z is a random distance in front of the plane (negative direction).
+                let newZ = Game.plane.position.z - (Math.random() * 200 + 100);
+                let newX = Game.plane.position.x + (Math.random() * 400 - 200);
+                let groundY = Math.sin(newX / 10) * Math.cos(newZ / 10);
+                let newY = (obj.position.y > 5) ? Math.random() * 10 + 5 : groundY + 1;
+                obj.position.set(newX, newY, newZ);
             }
         };
         Game.obstacles.forEach(reposition);
@@ -359,7 +362,7 @@ var Game = {
         for (let i = 0; i < allTargets.length; i++) {
             let target = allTargets[i];
             // Adjust the threshold here if needed to ensure detection on touch.
-            if (planePos.distanceTo(target.position) < 1.5) {
+            if (planePos.distanceTo(target.position) < 2.0) {
                 console.log("Collision detected!");
                 this.endGame();
                 return;
@@ -400,20 +403,13 @@ var Game = {
         }
         // BULLET SHOOTING LOGIC:
         if (this.keys[' ']) {
-            // If space is just pressed (not held before), fire one bullet and set spaceActive flag.
-            if (!this.spaceActive) {
+            if (this.shootCooldown <= 0) {
                 this.shootBullet();
-                this.shootCooldown = 20; // initial cooldown for single shot
+                // Use an initial longer cooldown then burst with reduced cooldown
+                this.shootCooldown = this.spaceActive ? 5 : 20;
                 this.spaceActive = true;
-            } else {
-                // If already holding, fire bursts when cooldown allows.
-                if (this.shootCooldown <= 0) {
-                    this.shootBullet();
-                    this.shootCooldown = 5; // faster firing for burst
-                }
             }
         } else {
-            // Reset flag when space is released.
             this.spaceActive = false;
         }
         if (this.shootCooldown > 0) {
