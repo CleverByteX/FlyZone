@@ -195,8 +195,9 @@ var Game = {
             var mountain = new THREE.Mesh(geometry, material);
             mountain.position.set(-200 + i * 100, 10, -200 - Math.random() * 100);
             mountain.castShadow = true;
-            // Mountains are indestructible.
+            // Marca como montaña: no destructible, pero participa en colisiones (con un radio mayor)
             mountain.userData.destructible = false;
+            mountain.userData.isMountain = true;
             this.scene.add(mountain);
             this.mountains.push(mountain);
         }
@@ -230,6 +231,7 @@ var Game = {
             house.position.set(Math.random() * 400 - 200, 1.5, Math.random() * 400 - 200);
             house.castShadow = true;
             house.userData.destructible = true;
+            house.userData.collisionRadius = 3.0; // Aumenta el radio de colisión para las casas.
             this.scene.add(house);
             this.landmarks.push(house);
         }
@@ -254,6 +256,8 @@ var Game = {
                 farmHouse.userData.destructible = true;
                 farmGroup.add(farmHouse);
             }
+            // Establece un radio de colisión global para el grupo:
+            farmGroup.userData.collisionRadius = 5.0;
             farmGroup.position.set(Math.random() * 400 - 200, 0, Math.random() * 400 - 200);
             this.scene.add(farmGroup);
             this.landmarks.push(farmGroup);
@@ -326,7 +330,6 @@ var Game = {
             bullet.position.add(bullet.velocity);
             bullet.lifetime--;
             
-            // Remover la bala si se acabó su tiempo o si queda muy atrás del avión.
             if (bullet.lifetime <= 0 || bullet.position.z < this.plane.position.z - 500) {
                 this.scene.remove(bullet);
                 this.bullets.splice(i, 1);
@@ -336,12 +339,19 @@ var Game = {
             let targets = this.obstacles.concat(this.landmarks).concat(this.mountains).concat(this.clouds);
             for (let j = targets.length - 1; j >= 0; j--) {
                 let target = targets[j];
-                if (bullet.position.distanceTo(target.position) < 2.0) {
+                // Use collisionRadius from userData si existe, sino un valor por defecto.
+                let collisionRadius = (target.userData.collisionRadius !== undefined) 
+                    ? target.userData.collisionRadius 
+                    : (target.userData.isMountain ? 4.0 : 2.0);
+                    
+                if (bullet.position.distanceTo(target.position) < collisionRadius) {
                     if (target.userData.destructible === false) {
+                        // Para montañas (u otros no destructibles): elimina la bala.
                         this.scene.remove(bullet);
                         this.bullets.splice(i, 1);
                         break;
                     } else {
+                        // Para objetos destructibles: reposiciona el objeto.
                         this.repositionTarget(target);
                         this.scene.remove(bullet);
                         this.bullets.splice(i, 1);
@@ -384,12 +394,13 @@ var Game = {
     checkCollisions: function() {
         if (!this.plane) return;
         let planePos = this.plane.position;
-        // Combine all objects to check collision
         let allTargets = this.obstacles.concat(this.landmarks).concat(this.mountains).concat(this.clouds);
         for (let i = 0; i < allTargets.length; i++) {
             let target = allTargets[i];
-            // Adjust the threshold here if needed to ensure detection on touch.
-            if (planePos.distanceTo(target.position) < 2.0) {
+            let collisionRadius = (target.userData.collisionRadius !== undefined) 
+                ? target.userData.collisionRadius 
+                : (target.userData.isMountain ? 4.0 : 2.0);
+            if (planePos.distanceTo(target.position) < collisionRadius) {
                 console.log("Collision detected!");
                 this.endGame();
                 return;
