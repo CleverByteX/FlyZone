@@ -40,6 +40,9 @@ var Game = {
             console.error("No element with id 'game-container' found!");
         } else {
             container.appendChild(this.renderer.domElement);
+            // Ensure the container is focusable so keyboard events are captured.
+            container.setAttribute("tabindex", "0");
+            container.focus();
         }
         
         // Play background music immediately
