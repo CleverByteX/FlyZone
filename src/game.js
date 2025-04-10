@@ -53,11 +53,21 @@ var Game = {
             });
         }
         
-        // Play background music immediately
+        // Play background music immediately if allowed
         this.backgroundMusic = new Audio("assets/sounds/background.mp3");
         this.backgroundMusic.loop = true;
         this.backgroundMusic.volume = 0.3;
         this.backgroundMusic.play();
+
+        // If the music is still paused (due to autoplay restrictions),
+        // add a one-time click listener on the body to trigger playback.
+        if(this.backgroundMusic.paused) {
+            document.body.addEventListener('click', function() {
+                if(Game.backgroundMusic.paused){
+                    Game.backgroundMusic.play();
+                }
+            }, { once: true });
+        }
         
         // Lighting
         var ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -113,13 +123,38 @@ var Game = {
         this.bullets = [];
         this.addExtraPlanes();
         
-        // Keyboard listeners for movement and shooting
+        // Standard keyboard listeners for movement (existing)
         window.addEventListener('keydown', function(e) {
-            Game.keys[e.key] = true;
+            // Avoid interfering with dedicated space handling.
+            if (e.key !== ' ') {
+                Game.keys[e.key] = true;
+            }
         });
         window.addEventListener('keyup', function(e) {
-            Game.keys[e.key] = false;
+            if (e.key !== ' ') {
+                Game.keys[e.key] = false;
+            }
         });
+
+        // Dedicated shooting handler for space.
+        // This ensures that when the space key is held down, shootBullet() is called repeatedly.
+        var shootingInterval = null;
+        window.addEventListener('keydown', function(e) {
+            if (e.key === ' ' && shootingInterval === null) {
+                shootingInterval = setInterval(function() {
+                    if (!Game.gameOver && Game.plane) {
+                        Game.shootBullet();
+                    }
+                }, 100);  // Adjust the interval (milliseconds) for desired fire rate
+            }
+        });
+        window.addEventListener('keyup', function(e) {
+            if (e.key === ' ' && shootingInterval !== null) {
+                clearInterval(shootingInterval);
+                shootingInterval = null;
+            }
+        });
+
         // Mouse listeners for camera control
         window.addEventListener('mousedown', function(e) {
             if (e.button === 0) {
@@ -387,13 +422,15 @@ var Game = {
         this.backgroundMusic.pause();
     },
     updateControls: function() {
-        // Force focus on the game container on every update to ensure key events are captured.
+        // Force focus on the game container on every update.
         var container = document.getElementById('game-container');
         if (container) {
             container.focus();
         }
-
+        
         if (!this.plane) return;
+        
+        // Movement controls
         if (this.keys['ArrowLeft']) {
             this.plane.position.x -= 0.3;
         }
@@ -412,24 +449,28 @@ var Game = {
         if (this.keys['s'] || this.keys['S']) {
             this.plane.position.y -= 0.3;
         }
-        // Adjust the plane so it does not sink into the ground.
+        
+        // Prevent the plane from sinking into the ground.
         let currentGround = Math.sin(this.plane.position.x / 10) * Math.cos(this.plane.position.z / 10);
         if (this.plane.position.y < currentGround + 1) {
             this.plane.position.y = currentGround + 1;
         }
-        // BULLET SHOOTING LOGIC:
-        if (this.keys[' ']) {
-            if (this.shootCooldown <= 0) {
-                this.shootBullet();
-                // Use an initial longer cooldown then a burst with reduced cooldown.
-                this.shootCooldown = this.spaceActive ? 5 : 20;
-                this.spaceActive = true;
+        
+        // Shooting logic – always process if the game isn't over.
+        if (!this.gameOver) {
+            if (this.keys[' ']) {
+                if (this.shootCooldown <= 0) {
+                    this.shootBullet();
+                    // Apply cooldown: longer initial burst then reduced for continuous shooting.
+                    this.shootCooldown = this.spaceActive ? 5 : 20;
+                    this.spaceActive = true;
+                }
+            } else {
+                this.spaceActive = false;
             }
-        } else {
-            this.spaceActive = false;
-        }
-        if (this.shootCooldown > 0) {
-            this.shootCooldown--;
+            if (this.shootCooldown > 0) {
+                this.shootCooldown--;
+            }
         }
     },
     animate: function() {

@@ -5,9 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Plane Game</title>
     <link rel="stylesheet" href="styles/style.css">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+        }
+        /* Ensure the game container doesn't overlay the mute button */
+        #game-container {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
 </head>
 <body>
     <div id="game-container"></div>
+
+    <!-- Mute Button (positioned at top-right) -->
+    <button id="mute-button" 
+        style="position: fixed; top: 10px; right: 10px; z-index: 99999; background: #fff; border: none; padding: 8px 12px; cursor: pointer;">
+        Mute
+    </button>
+    
     <div id="game-over" style="display: none;">
         <h1>Game Over</h1>
         <button id="restart-button">Restart</button>
@@ -18,5 +37,25 @@
     <script src="src/controls.js"></script>
     <script src="src/game.js"></script>
     <script src="src/main.js"></script>
+    <script>
+        // Mute Button event listener:
+        // By default, the background music plays. Clicking the button will toggle mute/unmute.
+        document.getElementById('mute-button').addEventListener('click', function() {
+            if (Game.backgroundMusic) {
+                if (Game.backgroundMusic.muted) {
+                    Game.backgroundMusic.muted = false;
+                    this.textContent = "Mute";
+                } else {
+                    Game.backgroundMusic.muted = true;
+                    this.textContent = "Unmute";
+                }
+            }
+        });
+        
+        // Restart button listener
+        document.getElementById('restart-button').addEventListener('click', function() {
+            location.reload();
+        });
+    </script>
 </body>
 </html>
