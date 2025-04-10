@@ -165,6 +165,9 @@ var Game = {
             });
         }
         window.addEventListener('resize', this.onWindowResize.bind(this), false);
+        window.addEventListener('blur', () => {
+            this.keys[' '] = false;
+        });
         this.animate();
     },
     addClouds: function() {
@@ -304,6 +307,7 @@ var Game = {
         }
     },
     shootBullet: function() {
+        console.log("Firing bullet!");
         var geometry = new THREE.SphereGeometry(0.2, 8, 8);
         var material = new THREE.MeshStandardMaterial({ color: 0xffff00 });
         var bullet = new THREE.Mesh(geometry, material);
@@ -311,6 +315,7 @@ var Game = {
             bullet.position.copy(this.plane.position);
             bullet.position.z -= 2;
             bullet.velocity = new THREE.Vector3(0, 0, -1);
+            bullet.lifetime = 150; // Vida reducida a 150 frames (~2.5 segundos)
             this.scene.add(bullet);
             this.bullets.push(bullet);
         }
@@ -319,12 +324,15 @@ var Game = {
         for (let i = this.bullets.length - 1; i >= 0; i--) {
             let bullet = this.bullets[i];
             bullet.position.add(bullet.velocity);
-            if (bullet.position.z < -500) {
+            bullet.lifetime--;
+            
+            // Remover la bala si se acabó su tiempo o si queda muy atrás del avión.
+            if (bullet.lifetime <= 0 || bullet.position.z < this.plane.position.z - 500) {
                 this.scene.remove(bullet);
                 this.bullets.splice(i, 1);
                 continue;
             }
-            // Increase collision detection threshold slightly for reliability.
+            
             let targets = this.obstacles.concat(this.landmarks).concat(this.mountains).concat(this.clouds);
             for (let j = targets.length - 1; j >= 0; j--) {
                 let target = targets[j];
@@ -397,6 +405,9 @@ var Game = {
         this.backgroundMusic.pause();
     },
     updateControls: function() {
+        if (!document.hasFocus()) {
+            this.keys[' '] = false;
+        }
         // Force focus on the game container on every update.
         var container = document.getElementById('game-container');
         if (container) {
@@ -431,20 +442,15 @@ var Game = {
             this.plane.position.y = currentGround + 1;
         }
         
-        // Shooting logic – always process if the game isn't over.
+        // Shooting logic – update with new "press" detection
         if (!this.gameOver) {
-            if (this.keys[' ']) {
-                if (this.shootCooldown <= 0) {
-                    this.shootBullet();
-                    // Apply cooldown: longer initial burst then reduced for continuous shooting.
-                    this.shootCooldown = this.spaceActive ? 5 : 20;
-                    this.spaceActive = true;
-                }
-            } else {
-                this.spaceActive = false;
-            }
             if (this.shootCooldown > 0) {
                 this.shootCooldown--;
+            }
+            
+            if (this.keys[' '] && this.shootCooldown <= 0) {
+                this.shootBullet();
+                this.shootCooldown = 10; // Puedes ajustar el valor para controlar la velocidad de disparo
             }
         }
     },
