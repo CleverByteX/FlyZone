@@ -43,6 +43,14 @@ var Game = {
             // Ensure the container is focusable so keyboard events are captured.
             container.setAttribute("tabindex", "0");
             container.focus();
+            // Regain focus on any mouse down event.
+            container.addEventListener('mousedown', function() {
+                container.focus();
+            });
+            // When the container loses focus, immediately refocus it.
+            container.addEventListener('blur', function() {
+                container.focus();
+            });
         }
         
         // Play background music immediately
@@ -379,6 +387,12 @@ var Game = {
         this.backgroundMusic.pause();
     },
     updateControls: function() {
+        // Force focus on the game container on every update to ensure key events are captured.
+        var container = document.getElementById('game-container');
+        if (container) {
+            container.focus();
+        }
+
         if (!this.plane) return;
         if (this.keys['ArrowLeft']) {
             this.plane.position.x -= 0.3;
@@ -398,6 +412,7 @@ var Game = {
         if (this.keys['s'] || this.keys['S']) {
             this.plane.position.y -= 0.3;
         }
+        // Adjust the plane so it does not sink into the ground.
         let currentGround = Math.sin(this.plane.position.x / 10) * Math.cos(this.plane.position.z / 10);
         if (this.plane.position.y < currentGround + 1) {
             this.plane.position.y = currentGround + 1;
@@ -406,7 +421,7 @@ var Game = {
         if (this.keys[' ']) {
             if (this.shootCooldown <= 0) {
                 this.shootBullet();
-                // Use an initial longer cooldown then burst with reduced cooldown
+                // Use an initial longer cooldown then a burst with reduced cooldown.
                 this.shootCooldown = this.spaceActive ? 5 : 20;
                 this.spaceActive = true;
             }
