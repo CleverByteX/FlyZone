@@ -1,0 +1,26 @@
+{
+  "name": "mobile-3d-plane-game",
+  "version": "1.0.0",
+  "description": "A simple 3D game where the player controls a plane flying over a landscape.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "live-server",
+    "build": "webpack"
+  },
+  "dependencies": {
+    "three": "^0.136.0"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.1",
+    "webpack": "^5.64.4",
+    "webpack-cli": "^4.9.1"
+  },
+  "keywords": [
+    "3D",
+    "game",
+    "plane",
+    "mobile"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
