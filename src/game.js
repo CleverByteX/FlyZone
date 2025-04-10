@@ -42,13 +42,11 @@ var Game = {
             container.appendChild(this.renderer.domElement);
         }
         
-        // Background Music: wait for a click to start, remove immediate play.
+        // Play background music immediately
         this.backgroundMusic = new Audio("assets/sounds/background.mp3");
         this.backgroundMusic.loop = true;
         this.backgroundMusic.volume = 0.3;
-        document.body.addEventListener('click', () => {
-            this.backgroundMusic.play();
-        }, { once: true });
+        this.backgroundMusic.play();
         
         // Lighting
         var ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
